@@ -275,7 +275,7 @@ const sendMasivesImg = async(req, res = response) => {
     try {
 
         const { id } = req.params;
-        const contacts = JSON.parse(req.body.message.contacts);        
+        const contacts = JSON.parse(req.body.message);        
 
         // VALIDATE IMAGE
         if (!req.files || Object.keys(req.files).length === 0) {

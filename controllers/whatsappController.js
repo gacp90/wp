@@ -267,6 +267,129 @@ const sendMessageMasive = async(number, message) => {
     }
 };
 
+/** ======================================================================
+ *  POST MASIVOS IMG
+=========================================================================*/
+const sendMasivesImg = async(req, res = response) => {
+
+    try {
+
+        const { id } = req.params;
+        const contacts = req.body.contacts;
+
+        // VALIDATE IMAGE
+        if (!req.files || Object.keys(req.files).length === 0) {
+            return res.status(400).json({
+                ok: false,
+                msg: 'No has seleccionado ningún archivo'
+            });
+        }
+
+        const file = await sharp(req.files.image.data).metadata();
+        const extFile = file.format;
+
+        // VALID EXT
+        const validExt = ['jpg', 'png', 'jpeg', 'webp', 'bmp', 'svg'];
+        if (!validExt.includes(extFile)) {
+            return res.status(400).json({
+                ok: false,
+                msg: 'No se permite este tipo de imagen, solo extenciones JPG - jpeg - PNG - WEBP - SVG'
+            });
+        }
+        // VALID EXT
+
+        // GENERATE NAME
+        const nameFile = `${ uuidv4() }.png`;
+
+        // PATH IMAGE
+        const path = `./uploads/images/${ nameFile }`;
+
+        await sharp(req.files.image.data)
+            .png()
+            .toFile(path);
+
+        res.json({
+            ok: true,
+            msg: `Se estan enviando los mensajes masivos...`
+        });
+
+        setImmediate(async() => {
+            await sendMessagesInBatchesWithImg(contacts, path);
+        });
+
+
+
+    } catch (error) {
+        console.log(error);
+        return res.status(500).json({
+            ok: false,
+            msg: 'Error inesperado, porfavor intente nuevamente'
+        });
+    }
+
+}
+
+/** ======================================================================
+ *  SEND MASIVES WITH IMAGE
+=========================================================================*/
+const sendMessagesInBatchesWithImg = async(contactList, path) => {
+    const batchSize = 20; // Ajusta el tamaño de los lotes según la capacidad de tu servidor
+    const delayBetweenBatches = Math.random() * (4500 - 3000) + 3000; // Ajusta el retraso entre lotes (en milisegundos)
+
+    const createBatches = (arr, size) => {
+        const batches = [];
+        for (let i = 0; i < arr.length; i += size) {
+            batches.push(arr.slice(i, i + size));
+        }
+        return batches;
+    };
+
+    const batches = createBatches(contactList, batchSize);
+
+    for (let i = 0; i < batches.length; i++) {
+        const batch = batches[i];
+        console.log(`Enviando lote ${i + 1} de ${batches.length}`);
+
+        // Enviar todos los mensajes del lote de forma simultánea
+        // await Promise.all(batch.map(contact => sendMessage(contact.number, contact.message, id)));
+        for (let e = 0; e < batch.length; e++) {
+            const contact = batch[e];
+            const delayBetweenBatches2 = Math.random() * (4500 - 3000) + 3000;
+
+            sendMessageMasiveImg(contact.number, contact.message, path)
+
+            await delay(delayBetweenBatches2);
+        }
+
+        // Esperar un retraso antes de enviar el siguiente lote
+        await delay(delayBetweenBatches);
+    }
+};
+
+const sendMessageMasiveImg = async(number, message, path) => {
+
+    // Pausa entre mensajes para evitar el spam
+    const delayM = Math.random() * (4500 - 3000) + 3000;
+    await delay(delayM);
+
+    try {
+
+        number = number.trim().replace(/\s/g, '');
+
+        // await socket.sendMessage(number, { text: message });
+
+        // Envia la imagen como un mensaje de tipo 'imageMessage'
+        await socket.sendMessage(number, {
+            image: fs.readFileSync(path),
+            caption: message,  // Texto que acompañará la imagen
+        });
+
+    } catch (error) {
+        console.error(`Error al enviar el mensaje a ${number}`, error);
+        throw error; // Devolver el error para que el controlador maneje el fallo
+    }
+};
+
 
 
 
@@ -274,5 +397,6 @@ module.exports = {
     getQR,
     sendMessage,
     sendImage,
-    sendMasives
+    sendMasives,
+    sendMasivesImg
 };

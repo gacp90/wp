@@ -2,7 +2,7 @@ const express = require('express');
 const expressFileUpload = require('express-fileupload');
 
 // CONTROLADORES
-const {  sendMessage, getQR, sendImage, sendMasives } = require('../controllers/whatsappController');
+const {  sendMessage, getQR, sendImage, sendMasives, sendMasivesImg } = require('../controllers/whatsappController');
 
 const router = express.Router();
 router.use(expressFileUpload());
@@ -26,5 +26,10 @@ router.post('/send-iamge/:id/:number', sendImage);
  *  POST MASIVE SMS
 =========================================================================*/
 router.post('/masive/:id', sendMasives);
+
+/** =====================================================================
+ *  POST MASIVE SMS
+=========================================================================*/
+router.post('/masive/img/:id', sendMasivesImg);
 
 module.exports = router;

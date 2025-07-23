@@ -9,35 +9,18 @@ const qrcode = require('qrcode-terminal');
 
 const deleteSession = async() => {
 
-    // try {
-    //     if (socket) {
-    //         await socket.logout();
-    //         socket = null;
-    //     }
-    
-    //     const sessionPath = `./auth_info`; 
-
-    //     if (fs.existsSync(sessionPath)) {
-    //         fs.rm(sessionPath, { recursive: true, force: true });
-    //     }
-    // } catch {
-    // }
-
     try {
         if (socket) {
             await socket.logout();
             socket = null;
         }
+    
+        const sessionPath = `./auth_info`; 
 
-        const sessionPath = `./auth_info`;
-        await fs.promises.rm(sessionPath, { recursive: true, force: true });
-        
-    } catch (error) {
-        console.log(error);
-        return res.status(500).json({
-            ok: false,
-            msg: 'Error inesperado, porfavor intente nuevamente'
-        });
+        if (fs.existsSync(sessionPath)) {
+            fs.rm(sessionPath, { recursive: true, force: true });
+        }
+    } catch {
     }
 
 }

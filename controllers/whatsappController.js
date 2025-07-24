@@ -5,7 +5,6 @@ const sharp = require('sharp');
 const { v4: uuidv4 } = require('uuid');
 
 const { default: Baileys, useMultiFileAuthState, DisconnectReason } = require('baileys');
-const qrcode = require('qrcode-terminal');
 
 const deleteSession = async() => {
 
@@ -29,8 +28,14 @@ const deleteSession = async() => {
             socket = null;
         }
 
-        const sessionPath = `./auth_info`;
-        await fs.promises.rm(sessionPath, { recursive: true, force: true });
+        const folder = './auth_info';
+
+        if (fs.existsSync(folder)) {
+            fs.rm(folder, { recursive: true, force: true }, (err) => {
+                if (err) console.error('Error eliminando carpeta:', err);
+                else console.log('Session Eliminada');
+            });
+        }
         
     } catch (error) {
         console.log(error);
@@ -46,56 +51,118 @@ const deleteSession = async() => {
  *  GET QR
 =========================================================================*/
 let socket = null;
-const getQR = async(req, res = response) =>{
-
+const getQR = async (req, res) => {
     try {
-
+        // Eliminar sesión anterior
         await deleteSession();
 
-        const { state, saveCreds } = await useMultiFileAuthState(`./auth_info/phone`);    
+        const { state, saveCreds } = await useMultiFileAuthState(SESSION_FOLDER);
+        const { version } = await fetchLatestBaileysVersion();
 
-        // Crear socket de Baileys
-        socket = Baileys({
-            auth: state
+        socket = makeWASocket({
+            version,
+            auth: state,
+            printQRInTerminal: true
         });
 
         socket.ev.on('creds.update', saveCreds);
 
         socket.ev.on('connection.update', (update) => {
-            const { connection, qr, lastDisconnect } = update;
+            const { connection, lastDisconnect, qr } = update;
 
             if (qr) {
-                console.log('Escanea el siguiente código QR:', qr);
-                // qrcode.generate(qr, { small: true });
-                res.json({
-                    qr
-                })
+                globalQR = qr;  // Guardamos temporalmente para devolverlo por HTTP
             }
 
             if (connection === 'close') {
-                const reason = lastDisconnect?.error?.output?.statusCode;
-                console.log(`Conexión cerrada. Razón: ${reason}`);
-                if (reason !== DisconnectReason.loggedOut) {
-                    console.log("Reconectando...");
-                    getQR(req, res);  // Intenta reconectar automáticamente
+                const code = lastDisconnect?.error?.output?.statusCode;
+                console.log('Conexión cerrada. Código:', code);
+                if (code !== DisconnectReason.loggedOut) {
+                    console.log('Reconectando...');
                 } else {
-                    console.log("Se cerró sesión. Escanea el QR para autenticarte nuevamente.");
+                    console.log('Cierre de sesión detectado.');
                 }
             }
 
             if (connection === 'open') {
-                console.log('Conexión exitosa con WhatsApp');
+                console.log('Conexión establecida con WhatsApp ✅');
             }
         });
-        
+
+        // Esperar máximo 15 segundos a que llegue el QR
+        const waitForQR = async () => {
+            for (let i = 0; i < 30; i++) {
+                if (globalQR) return globalQR;
+                await new Promise(r => setTimeout(r, 500)); // Esperar 500 ms
+            }
+            throw new Error('Timeout esperando QR');
+        };
+
+        const qrCode = await waitForQR();
+
+        return res.status(200).json({
+            ok: true,
+            qr: qrCode
+        });
+
     } catch (error) {
-        console.log(error);
+        console.log('Error en getQR:', error);
         return res.status(500).json({
             ok: false,
-            msg: 'Error inesperado, porfavor intente nuevamente'
+            msg: 'Error generando QR'
         });
     }
-}
+};
+// const getQR = async(req, res = response) =>{
+
+//     try {
+
+//         await deleteSession();
+
+//         const { state, saveCreds } = await useMultiFileAuthState(`./auth_info/phone`);    
+
+//         // Crear socket de Baileys
+//         socket = Baileys({
+//             auth: state
+//         });
+
+//         socket.ev.on('creds.update', saveCreds);
+
+//         socket.ev.on('connection.update', (update) => {
+//             const { connection, qr, lastDisconnect } = update;
+
+//             if (qr) {
+//                 console.log('Escanea el siguiente código QR:', qr);
+//                 // qrcode.generate(qr, { small: true });
+//                 res.json({
+//                     qr
+//                 })
+//             }
+
+//             if (connection === 'close') {
+//                 const reason = lastDisconnect?.error?.output?.statusCode;
+//                 console.log(`Conexión cerrada. Razón: ${reason}`);
+//                 if (reason !== DisconnectReason.loggedOut) {
+//                     console.log("Reconectando...");
+//                     getQR(req, res);  // Intenta reconectar automáticamente
+//                 } else {
+//                     console.log("Se cerró sesión. Escanea el QR para autenticarte nuevamente.");
+//                 }
+//             }
+
+//             if (connection === 'open') {
+//                 console.log('Conexión exitosa con WhatsApp');
+//             }
+//         });
+        
+//     } catch (error) {
+//         console.log(error);
+//         return res.status(500).json({
+//             ok: false,
+//             msg: 'Error inesperado, porfavor intente nuevamente'
+//         });
+//     }
+// }
 
 // Función para enviar un mensaje
 const sendMessage = async(req, res)=> {

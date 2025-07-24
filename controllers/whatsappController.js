@@ -53,6 +53,7 @@ const deleteSession = async() => {
  *  GET QR
 =========================================================================*/
 let socket = null;
+let globalQR = null;
 const getQR = async (req, res) => {
     try {
         // Eliminar sesión anterior

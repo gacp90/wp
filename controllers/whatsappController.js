@@ -4,7 +4,9 @@ const fs = require('fs');
 const sharp = require('sharp');
 const { v4: uuidv4 } = require('uuid');
 
-const { default: Baileys, useMultiFileAuthState, DisconnectReason } = require('baileys');
+// const { default: Baileys, useMultiFileAuthState, DisconnectReason } = require('baileys');
+const { default: makeWASocket, useMultiFileAuthState, fetchLatestBaileysVersion, DisconnectReason } = require('baileys');
+
 // NUEVO
 const deleteSession = async() => {
 

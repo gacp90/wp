@@ -56,7 +56,7 @@ const getQR = async (req, res) => {
         // Eliminar sesión anterior
         await deleteSession();
 
-        const { state, saveCreds } = await useMultiFileAuthState(SESSION_FOLDER);
+        const { state, saveCreds } = await useMultiFileAuthState('./auth_info/phone');
         const { version } = await fetchLatestBaileysVersion();
 
         socket = makeWASocket({

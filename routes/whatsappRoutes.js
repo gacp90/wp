@@ -2,10 +2,15 @@ const express = require('express');
 const expressFileUpload = require('express-fileupload');
 
 // CONTROLADORES
-const {  sendMessage, getQR, sendImage, sendMasives, sendMasivesImg } = require('../controllers/whatsappController');
+const {  sendMessage, getQR, sendImage, sendMasives, sendMasivesImg, logout } = require('../controllers/whatsappController');
 
 const router = express.Router();
 router.use(expressFileUpload());
+
+/** =====================================================================
+ *  GET QR
+=========================================================================*/
+router.get('/logout/', logout);
 
 /** =====================================================================
  *  GET QR

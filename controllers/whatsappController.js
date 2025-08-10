@@ -12,16 +12,32 @@ const SESSION_PATH = './auth_info/phone';
 let socket = null;
 
 // ✅ Elimina la sesión existente si hay
+// const deleteSession = async () => {
+//     if (fs.existsSync(SESSION_PATH)) {
+//         try {
+//             fs.rmSync(SESSION_PATH, { recursive: true, force: true });
+//             console.log('✅ CSesión eliminada');
+//         } catch (err) {
+//             console.error('❌ Error al eliminar la carpeta:', err);
+//         }
+//     }
+// };
 const deleteSession = async () => {
-    if (fs.existsSync(SESSION_PATH)) {
-        try {
-            fs.unlinkSync(SESSION_PATH);
-            console.log('✅ Sesión eliminada');
-        } catch (err) {
-            console.error('Error al eliminar la sesión:', err);
+    try {
+        // Verifica si existe antes de eliminar
+        await fs.promises.access(SESSION_PATH, fs.constants.F_OK);
+        
+        await fs.promises.rm(SESSION_PATH, { recursive: true, force: true });
+        console.log('✅ Sesión eliminada');
+    } catch (err) {
+        if (err.code === 'ENOENT') {
+            console.log('ℹ️ No existe la sesión, no se elimina nada');
+        } else {
+            console.error('❌ Error al eliminar la carpeta:', err);
         }
     }
 };
+
 
 // ✅ Cerrar sesión manualmente
 const logout = async (req, res) => {

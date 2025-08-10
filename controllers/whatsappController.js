@@ -48,7 +48,7 @@ const logout = async (req, res) => {
 
 const getQR = async (req, res) => {
   try {
-    await deleteSession(); // Si quieres reiniciar siempre la sesión
+    // await deleteSession(); // Si quieres reiniciar siempre la sesión
 
     const { state, saveCreds } = await useMultiFileAuthState(SESSION_PATH);
 

@@ -48,6 +48,7 @@ const deleteSession = async () => {
 // ✅ Cerrar sesión manualmente
 const logout = async (req, res) => {
     if (!socket) {
+        await deleteSession();
         return res.status(400).json({ ok: false, msg: 'No hay sesión activa' });
     }
 

@@ -53,8 +53,8 @@ const logout = async (req, res) => {
     }
 
     try {
-        await socket.logout();
         await deleteSession();
+        await socket.logout();
         res.json({ ok: true, msg: 'Sesión cerrada exitosamente' });
     } catch (err) {
         console.error('❌ Error al cerrar sesión:', err);
